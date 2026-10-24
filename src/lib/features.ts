@@ -5,7 +5,7 @@ const bucket = (s:string) => [...s.toLowerCase()].reduce((n,c)=>(n*31+c.charCode
 export function embed(t:Telemetry): number[] {
   const v=Array<number>(128).fill(0);
   v[0]=1; v[1]=t.spend.reduce((a,b)=>a+b,0)/90000;
-  v[2]=Math.min(...t.spend,9000)/9000; v[3]=Math.max(...t.spend,0)/9000;
+  v[2]=t.spend.length?Math.min(...t.spend)/9000:0; v[3]=Math.max(...t.spend,0)/9000;
   v[4]=t.damage.reduce((a,b)=>a+b,0)/10000; v[5]=t.kills.length/10;
   v[6]=t.kills.filter(k=>k.x!==null).length/10; v[7]=t.agents.length/10;
   for(const d of t.damage) v[8+Math.min(7,Math.floor(d/100))]+=0.1;

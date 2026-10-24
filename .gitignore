@@ -8,3 +8,4 @@ coverage/
 .tools/
 test-results/
 *.log
+*.tsbuildinfo
