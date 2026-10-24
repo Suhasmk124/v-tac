@@ -1,4 +1,5 @@
 import "./globals.css";
+import "./upgrade.css";
 export const metadata = {
   title: "V-Tac | Tactical intelligence",
   description: "Valorant esports analytics research dashboard",

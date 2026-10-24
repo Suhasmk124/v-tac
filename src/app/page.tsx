@@ -3,36 +3,57 @@ import { currentUser } from "@/lib/auth";
 import { query } from "@/lib/db";
 import { demo } from "@/lib/demo";
 import { addTeam, logout } from "./actions";
+import { resolveSource } from "@/lib/scouting";
 export const dynamic = "force-dynamic";
 export default async function Dashboard({
   searchParams,
 }: {
-  searchParams: Promise<{ saved?: string }>;
+  searchParams: Promise<{ saved?: string; source?: string }>;
 }) {
   const params = await searchParams;
   const user = await currentUser();
   const live = !!user;
+  const source = live
+    ? await resolveSource(params.source)
+    : { slug: "synthetic", name: "Synthetic training fixtures" };
+  const isReal = source.slug === "vct-reference";
+  const sources = live
+    ? await query(
+        "SELECT d.* FROM data_sources d WHERE EXISTS(SELECT 1 FROM matches m WHERE m.data_source=d.slug) ORDER BY slug",
+      )
+    : [];
   const metrics = live
     ? (
         await query(
-          "SELECT (SELECT count(*) FROM match_games) games,(SELECT count(*) FROM game_rounds) rounds,(SELECT count(*) FROM players) players,(SELECT count(*) FROM kill_events) events",
+          `SELECT count(DISTINCT g.id) games,count(DISTINCT r.id) rounds,
+           (SELECT count(DISTINCT gr.player_id) FROM game_rosters gr JOIN match_games gg ON gg.id=gr.game_id JOIN matches mm ON mm.id=gg.match_id WHERE mm.data_source=$1) players,
+           count(DISTINCT e.round_id) events FROM matches m JOIN match_games g ON g.match_id=m.id LEFT JOIN game_rounds r ON r.game_id=g.id LEFT JOIN tactical_embeddings e ON e.round_id=r.id WHERE m.data_source=$1`,
+          [source.slug],
         )
       )[0]
-    : demo.metrics;
+    : { ...demo.metrics, events: 144 };
   const leaderboard = live
-    ? await query(
-        "SELECT * FROM mv_player_leaderboards ORDER BY acs DESC LIMIT 8",
-      )
+    ? isReal
+      ? await query(
+          `SELECT s.player_id,p.handle,p.role,count(*) maps,sum(s.rounds_played) rounds,sum(s.kills) kills,sum(s.deaths) deaths,round(sum(s.acs*s.rounds_played)/nullif(sum(s.rounds_played) FILTER(WHERE s.acs IS NOT NULL),0),1) acs,round(sum(s.adr*s.rounds_played)/nullif(sum(s.rounds_played) FILTER(WHERE s.adr IS NOT NULL),0),1) adr,NULL::numeric headshot_pct FROM player_game_stats s JOIN players p ON p.id=s.player_id JOIN match_games g ON g.id=s.game_id JOIN matches m ON m.id=g.match_id WHERE m.data_source=$1 GROUP BY s.player_id,p.handle,p.role HAVING count(*)>=3 ORDER BY acs DESC NULLS LAST LIMIT 8`,
+          [source.slug],
+        )
+      : await query(
+          "SELECT * FROM mv_player_leaderboards ORDER BY acs DESC LIMIT 8",
+        )
     : demo.leaderboard;
   const games = live
     ? await query(
-        "SELECT g.*,mp.name map,a.name team1,b.name team2 FROM match_games g JOIN maps mp ON mp.id=g.map_id JOIN matches m ON m.id=g.match_id JOIN teams a ON a.id=m.team1_id JOIN teams b ON b.id=m.team2_id ORDER BY m.played_at DESC LIMIT 8",
+        "SELECT g.*,mp.name map,a.name team1,b.name team2,t.name event FROM match_games g JOIN maps mp ON mp.id=g.map_id JOIN matches m ON m.id=g.match_id JOIN tournaments t ON t.id=m.tournament_id JOIN teams a ON a.id=m.team1_id JOIN teams b ON b.id=m.team2_id WHERE m.data_source=$1 ORDER BY m.played_at DESC,g.id DESC LIMIT 8",
+        [source.slug],
       )
     : demo.games;
   const alerts = live
-    ? await query(
-        "SELECT a.id,a.observed_damage,p.handle FROM alerts a JOIN player_round_stats s ON s.id=a.stat_id JOIN players p ON p.id=s.player_id ORDER BY a.id DESC LIMIT 4",
-      )
+    ? !isReal
+      ? await query(
+          "SELECT a.id,a.observed_damage,p.handle FROM alerts a JOIN player_round_stats s ON s.id=a.stat_id JOIN players p ON p.id=s.player_id ORDER BY a.id DESC LIMIT 4",
+        )
+      : []
     : [];
   return (
     <div className="shell">
@@ -47,7 +68,14 @@ export default async function Dashboard({
           </a>
           <a href="#matches">▦ Match library</a>
           <a href="#leaderboard">↗ Player intelligence</a>
-          <Link href="/research">◎ Tactical lab</Link>
+          <Link href={`/library?source=${source.slug}`}>
+            ▤ Full match library
+          </Link>
+          <Link href={`/scouting?source=${source.slug}`}>
+            ⚔ Opponent scouting
+          </Link>
+          <Link href={`/research?source=${source.slug}`}>◎ Tactical lab</Link>
+          <Link href="/data">◉ Data observatory</Link>
           <a href="#management">⚑ Team management</a>
           {user?.role === "Head_Coach" && (
             <Link href="/rosters">⇄ Player rosters</Link>
@@ -71,7 +99,7 @@ export default async function Dashboard({
           <span>
             WORKSPACE <b>/ Overview</b>
           </span>
-          <span className="pill">RESEARCH BUILD · V0.1</span>
+          <span className="pill">RESEARCH BUILD · V0.2</span>
         </header>
         <section className="hero">
           <div>
@@ -82,8 +110,8 @@ export default async function Dashboard({
               <span>Find the winning pattern.</span>
             </h1>
             <p>Turn match history into a sharper game plan.</p>
-            <Link className="button" href="/research">
-              Open tactical lab ↗
+            <Link className="button" href={`/scouting?source=${source.slug}`}>
+              Prepare for an opponent ↗
             </Link>
           </div>
           <div className="hero-mark" aria-hidden="true">
@@ -92,15 +120,30 @@ export default async function Dashboard({
         </section>
         <div className="notice">
           {live
-            ? "Connected database · seeded fixtures are synthetic research data."
+            ? `Database connected · ${source.name}. ${isReal ? "Public match records; player statistics are per map. Position telemetry is unavailable." : "Generated demonstration telemetry."}`
             : "SYNTHETIC PREVIEW · Example dashboard values. Sign in to explore the database, search rounds and manage teams."}
         </div>
+        {live && (
+          <form className="source-picker">
+            <label>
+              Active dataset
+              <select name="source" defaultValue={source.slug}>
+                {sources.map((s) => (
+                  <option key={s.slug} value={s.slug}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button>Switch dataset →</button>
+          </form>
+        )}
         <section className="metrics">
           {[
             ["Maps analyzed", metrics.games],
             ["Rounds indexed", metrics.rounds],
             ["Players tracked", metrics.players],
-            ["Kill events", metrics.events],
+            ["Vectorized rounds", metrics.events],
           ].map(([label, n]) => (
             <article className="panel" key={label}>
               <p>{label}</p>
@@ -129,7 +172,9 @@ export default async function Dashboard({
                   <i>MAP / 0{g.id}</i>
                 </div>
                 <div className="game-body">
-                  <small>SYNTHETIC INVITATIONAL</small>
+                  <small>
+                    {"event" in g ? g.event : "SYNTHETIC INVITATIONAL"}
+                  </small>
                   <p>
                     {g.team1}
                     <b>{g.team1_score}</b>
@@ -150,7 +195,11 @@ export default async function Dashboard({
               <p className="eyebrow">PERFORMANCE SIGNALS</p>
               <h2>Player leaderboard</h2>
             </div>
-            <span>Materialized tournament statistics</span>
+            <span>
+              {isReal
+                ? "Round-weighted source ACS / ADR · 3+ maps"
+                : "Materialized tournament statistics"}
+            </span>
           </div>
           <div className="panel table-wrap">
             <table>
@@ -179,14 +228,23 @@ export default async function Dashboard({
                     <td>
                       {p.kills} / {p.deaths}
                     </td>
-                    <td className="accent">{p.acs}</td>
-                    <td>{p.adr}</td>
-                    <td>{p.headshot_pct}%</td>
+                    <td className="accent">{p.acs ?? "—"}</td>
+                    <td>{p.adr ?? "—"}</td>
+                    <td>
+                      {p.headshot_pct == null ? "—" : `${p.headshot_pct}%`}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          {isReal && (
+            <p className="subtle">
+              HS% is available on individual map reviews. A season average is
+              withheld because the dataset does not include hit denominators.
+              Source ACS and ADR are rounded map averages weighted by rounds.
+            </p>
+          )}
         </section>
         <section className="lower-grid" id="management">
           <article className="panel">
@@ -219,7 +277,13 @@ export default async function Dashboard({
           <article className="panel">
             <p className="eyebrow">ANOMALY WATCH</p>
             <h2>Performance alerts</h2>
-            {alerts.length ? (
+            {isReal ? (
+              <p>
+                Individual round damage is not available in this public export,
+                so damage anomaly alerts are unavailable. The synthetic
+                workspace demonstrates that database trigger.
+              </p>
+            ) : alerts.length ? (
               alerts.map((a) => (
                 <p key={a.id}>
                   {a.handle}: {a.observed_damage} damage exceeded the baseline

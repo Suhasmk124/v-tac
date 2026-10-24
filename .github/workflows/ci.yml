@@ -39,6 +39,8 @@ jobs:
       - run: python -m unittest discover -s pipeline -p 'test_features.py'
       - run: python pipeline/test_import.py
       - run: python pipeline/test_vct_import.py
+      - name: Seed offline source-shaped fixture for public-data HTTP checks
+        run: python pipeline/seed_app_test.py
       - run: pnpm build
       - name: Check running app
         run: |

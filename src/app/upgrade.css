@@ -1,0 +1,81 @@
+aside {
+  overflow-y: auto;
+}
+nav {
+  gap: 3px;
+}
+nav a {
+  padding: 9px 10px;
+}
+.source-picker {
+  display: flex;
+  align-items: end;
+  gap: 14px;
+  margin-bottom: 26px;
+  max-width: 650px;
+}
+.source-picker label {
+  flex: 1;
+  margin: 0;
+}
+.source-picker button {
+  white-space: nowrap;
+}
+textarea {
+  font: inherit;
+  display: block;
+  background: #0f1520;
+  border: 1px solid #364356;
+  color: var(--ink);
+  padding: 12px;
+  width: 100%;
+  margin-top: 7px;
+  resize: vertical;
+}
+.note {
+  border-top: 1px solid var(--line);
+  padding: 15px 0;
+  margin-top: 20px;
+}
+.note p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.pagination {
+  display: flex;
+  gap: 15px;
+  margin: 25px 0;
+}
+.fingerprint {
+  font: 11px monospace;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+}
+details {
+  margin: 20px 0;
+}
+summary {
+  cursor: pointer;
+}
+details p {
+  color: var(--muted);
+  font-size: 12px;
+}
+.content > .panel {
+  margin-bottom: 20px;
+}
+.report-actions {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 20px 0;
+}
+@media (max-width: 640px) {
+  .source-picker {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .source-picker button {
+    align-self: start;
+  }
+}

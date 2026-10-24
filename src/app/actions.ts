@@ -78,3 +78,18 @@ export async function updateRoster(form: FormData) {
   revalidatePath("/");
   redirect("/?saved=1");
 }
+export async function addScoutingNote(form: FormData) {
+  const user = await requireUser(true);
+  const data = z
+    .object({
+      game: z.coerce.number().int().positive().max(2147483647),
+      body: z.string().trim().min(1).max(2000),
+    })
+    .parse(Object.fromEntries(form));
+  await query(
+    "INSERT INTO scouting_notes(game_id,author_id,body) VALUES($1,$2,$3)",
+    [data.game, user.id, data.body],
+  );
+  revalidatePath(`/games/${data.game}`);
+  redirect(`/games/${data.game}#notes`);
+}

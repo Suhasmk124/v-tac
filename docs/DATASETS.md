@@ -28,6 +28,7 @@ I also evaluated [Bernie Laird's VCT project](https://github.com/bernielaird/vct
 - Published map ACS/ADR are weighted by scoreboard rounds when aggregating. They are already rounded source averages, so the season aggregate is an approximation. Aggregate HS% is withheld because hit denominators are not available; individual map HS% remains available with its source label.
 - Side denotes the winning team's side in this source. The adapter resolves the attacking team from winner and side. Pistol reports count rounds 1 and 13, excluding overtime resets.
 - Completed map scores and observed round strips may have different coverage. `map_coverage` stores both expected and observed round counts. Missing round detail is not synthesized.
+- Team/player display names follow the downloaded snapshot's canonical names and may differ from the brand or handle used on a historical match date. Historical membership is still attached to the recorded game roster.
 
 ## Reproduce the import
 

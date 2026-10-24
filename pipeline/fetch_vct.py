@@ -21,7 +21,7 @@ def fetch(output):
                 if size > 100 * 1024 * 1024:
                     raise ValueError('Snapshot exceeds 100 MiB; inspect source changes before continuing')
                 target.write(chunk)
-        with duckdb.connect(str(partial), read_only=True) as db:
+        with duckdb.connect(str(partial), read_only=True, config={'enable_external_access':False}) as db:
             db.execute('SELECT match_id FROM matches LIMIT 1')
         os.replace(partial, output)
     finally:

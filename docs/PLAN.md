@@ -6,6 +6,9 @@
 
 Each stage is committed and pushed independently. Original proposal is preserved in project_context_proposal.md.
 
+4. Public-data integration: downloaded VCT Reference snapshot, 2025 season adapter, per-map and team-round tables, source/coverage metadata, transactional numbered migrations, offline adapter checks and import idempotency.
+5. Scouting workspace: dataset isolation, weighted public player statistics, paginated library, map-veto evidence with uncertainty, side/pistol/loadout reports, real economy similarity, coach notes, authenticated CSV exports and data observatory.
+
 ## Design corrections
 
 - Add users, sessions via signed expiring cookies, alerts and roster snapshots to the 12 domain tables. A player's current team must not rewrite historical participation.

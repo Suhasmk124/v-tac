@@ -43,6 +43,12 @@ Numeric scaling is part of the versioned contract. Encoder changes require a new
 
 ## Security boundary
 
-The deployed connection is `vtac_app`, not the database owner. It cannot create/drop schema objects or change users. It has only the read and team/player write privileges needed by the current UI. The server authenticates signed cookie subjects and reloads the user's current role, then rejects every coach action for scouts. This application login is a trusted backend credential, not an SQL account issued to individual scouts. Do not distribute it or provide arbitrary SQL endpoints. Admin imports and user management use a separate local connection.
+The deployed connection is `vtac_app`, not the database owner. It cannot create/drop schema objects or change users. It has read privileges, team/player writes and scouting-note inserts needed by the current UI. The server authenticates signed cookie subjects and reloads the user's current role, then rejects every coach action for scouts. This application login is a trusted backend credential, not an SQL account issued to individual scouts. Do not distribute it or provide arbitrary SQL endpoints. Admin imports and user management use a separate local connection.
+
+## Public-data extensions
+
+`data_sources` separates real and synthetic match cohorts. `data_imports` stores fingerprint/selection/counts and is linked from imported matches. `source_key` records upstream identity without replacing local primary keys. `map_coverage` records source block flags and expected versus observed rounds. `player_game_stats` preserves published map-level values, while `team_round_economy` stores nullable equipment value and bank independently of individual credits spent. Its trigger rejects teams outside the match. `scouting_notes` records coach observations and authorship.
+
+The adapter never expands a map-level ACS into artificial per-round combat scores. The original materialized leaderboard continues serving observed fixture player-round rows; public player summaries weight available published map averages by rounds. Missing statistics are excluded from their own denominators. Public aggregate headshot percentage is withheld without source hit denominators. The separate `vtac-economy-v1` feature contract is documented in [DATASETS.md](DATASETS.md).
 
 Sessions expire after eight hours. Removing a user or changing their role takes effect on their next request. There is no per-session logout revocation list; logout clears the browser cookie. Password-reset workflows, shared rate limiting and production deployment are future work.

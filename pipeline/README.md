@@ -1,5 +1,7 @@
 # Normalized telemetry import
 
+For the public dataset now used by the app, follow [the VCT Reference adapter instructions](../docs/DATASETS.md). This page describes the separate custom CSV contract for sources that actually contain individual round telemetry.
+
 This is a normalized CSV importer, **not an adapter for arbitrary VLR CSV or SQLite exports**. Source schemas vary; map a licensed source into these contracts before importing. Never infer missing positions, combat score or economy from match summary stats.
 
 ```powershell
