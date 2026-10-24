@@ -1,10 +1,38 @@
 {
-  "name": "v-tac", "version": "0.1.0", "private": true, "type": "module",
+  "name": "v-tac",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
   "scripts": {
-    "dev": "next dev --webpack", "build": "next build --webpack", "start": "next start",
-    "typecheck": "tsc --noEmit", "test": "tsx --test tests/*.test.ts",
-    "db:migrate": "tsx scripts/migrate.ts", "db:seed": "tsx scripts/seed.ts", "db:test": "tsx scripts/db-test.ts", "user:create":"tsx scripts/create-user.ts", "test:http":"tsx scripts/http-test.ts"
+    "dev": "next dev --webpack",
+    "build": "next build --webpack",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:seed": "tsx scripts/seed.ts",
+    "db:test": "tsx scripts/db-test.ts",
+    "user:create": "tsx scripts/create-user.ts",
+    "test:http": "tsx scripts/http-test.ts",
+    "format": "prettier --write src scripts tests"
   },
-  "dependencies": {"next": "^16.0.0", "react": "^19.2.0", "react-dom": "^19.2.0", "pg": "^8.16.0", "bcryptjs": "^3.0.2", "jose": "^6.1.0", "zod": "^4.1.0", "dotenv": "^17.2.0"},
-  "devDependencies": {"typescript": "^5.9.0", "tsx": "^4.20.0", "@types/node": "^22.0.0", "@types/react": "^19.0.0", "@types/react-dom": "^19.0.0", "@types/pg": "^8.15.0"}
+  "dependencies": {
+    "next": "^16.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "pg": "^8.16.0",
+    "bcryptjs": "^3.0.2",
+    "jose": "^6.1.0",
+    "zod": "^4.1.0",
+    "dotenv": "^17.2.0"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.10",
+    "typescript": "^5.9.0",
+    "tsx": "^4.20.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/pg": "^8.15.0"
+  }
 }

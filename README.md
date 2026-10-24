@@ -18,7 +18,7 @@ pnpm dev
 
 Open http://localhost:3000. An unauthenticated synthetic preview works without PostgreSQL. Sign in for live queries. Seed creates `coach@vtac.local` and `scout@vtac.local` and prints a random local password once; use `SEED_PASSWORD` to supply your own. Never commit `.env` or real credentials. Seeding refuses a nonempty database.
 
-The supplied PostgreSQL passwords are **local development defaults**. The database port is bound to localhost. Use separate generated credentials, TLS, a shared login rate limiter and deployment-specific configuration before public hosting. Set `ADMIN_DATABASE_URL` only for local management commands; the deployed app needs `DATABASE_URL` and `SESSION_SECRET` only. The runtime login is a non-owner with no schema creation rights. Role checks occur on the server, and the current user role is reloaded from the database for each request.
+The supplied PostgreSQL passwords are **local development defaults**. The database port is bound to localhost. Use separate generated credentials, TLS, a shared login rate limiter and deployment-specific configuration before public hosting. Set `ADMIN_DATABASE_URL` only for local management commands; the deployed app needs `DATABASE_URL` and `SESSION_SECRET` only. The runtime login is a non-owner with no schema creation rights. Role checks occur on the server, and the current user role is reloaded from the database for each request. Bcrypt passwords are limited to 72 UTF-8 bytes to prevent silent truncation.
 
 ## Features
 
@@ -28,7 +28,7 @@ The supplied PostgreSQL passwords are **local development defaults**. The databa
 - Counter-pick evidence by opponent, map and agent composition, with round and game sample counts.
 - Historical economy win estimate for coaches; a real stored procedure is also available in SQL.
 - Bcrypt passwords, signed eight-hour HTTP-only sessions, server-side coach/scout permissions.
-- Coach team creation; scouts can explore all read features.
+- Coach team creation and current roster updates; scouts can explore all read features.
 - Tournament-baseline anomaly trigger after 10 observations, recording damage outside three sample standard deviations.
 - Transactional CSV import, generated vector features, automated database checks and CI.
 
@@ -61,6 +61,8 @@ pnpm typecheck
 pnpm test
 pnpm build
 pnpm db:test       # running, migrated and seeded database required
+python -m unittest discover -s pipeline -p test_features.py
+python pipeline/test_import.py  # temporary database round trip; admin connection required
 pnpm start        # separate terminal
 pnpm test:http    # running app required
 ```

@@ -1,0 +1,46 @@
+name: Verify V-Tac
+on: [push, pull_request]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_DB: vtac
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: local_admin_password
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d vtac"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      ADMIN_DATABASE_URL: postgresql://postgres:local_admin_password@127.0.0.1:5432/vtac
+      DATABASE_URL: postgresql://vtac_app:local_app_password@127.0.0.1:5432/vtac
+      SESSION_SECRET: ci-only-test-secret-at-least-thirty-two-characters
+      SEED_PASSWORD: ci-only-password-12345
+      TEST_PASSWORD: ci-only-password-12345
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.25.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck && pnpm test
+      - run: pnpm db:migrate && pnpm db:seed && pnpm db:test
+      - run: pip install -r pipeline/requirements.txt
+      - run: python -m unittest discover -s pipeline -p 'test_features.py'
+      - run: python pipeline/test_import.py
+      - run: pnpm build
+      - name: Check running app
+        run: |
+          pnpm start > /tmp/vtac.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://localhost:3000/login > /dev/null && break || sleep 1; done
+          pnpm test:http
