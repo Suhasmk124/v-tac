@@ -38,6 +38,7 @@ jobs:
       - run: pip install -r pipeline/requirements.txt
       - run: python -m unittest discover -s pipeline -p 'test_features.py'
       - run: python pipeline/test_import.py
+      - run: python pipeline/test_vct_import.py
       - run: pnpm build
       - name: Check running app
         run: |

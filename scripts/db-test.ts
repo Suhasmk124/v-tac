@@ -7,7 +7,7 @@ const c = new pg.Client({ connectionString: process.env.ADMIN_DATABASE_URL });
 await c.connect();
 try {
   assert.equal(
-    (await c.query("SELECT count(*) FROM game_rounds")).rows[0].count,
+    (await c.query("SELECT count(*) FROM game_rounds r JOIN match_games g ON g.id=r.game_id JOIN matches m ON m.id=g.match_id WHERE m.data_source='synthetic'")).rows[0].count,
     "144",
   );
   const vectors = (
