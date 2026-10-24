@@ -10,7 +10,7 @@ export default async function Research({
 }) {
   const user = await requireUser();
   const p = await searchParams;
-  const positive = z.coerce.number().int().positive();
+  const positive = z.coerce.number().int().positive().max(2147483647);
   const round = positive.catch(1).parse(p.round);
   const map = positive.catch(1).parse(p.map);
   const team = positive.catch(2).parse(p.team);
@@ -31,7 +31,20 @@ export default async function Research({
   const maps = await query("SELECT id,name FROM maps ORDER BY name");
   const teams = await query("SELECT id,name FROM teams ORDER BY name");
   const neighbors = await query(
-    `SELECT r.id,r.round_number,mp.name map,t.name winner,e.source,round((1-(e.profile <=> target.profile))::numeric,4) similarity FROM tactical_embeddings e JOIN tactical_embeddings target ON target.round_id=$1 AND target.feature_version=e.feature_version JOIN game_rounds r ON r.id=e.round_id JOIN match_games g ON g.id=r.game_id JOIN maps mp ON mp.id=g.map_id JOIN teams t ON t.id=r.winning_team_id WHERE e.round_id<>$1 AND g.map_id=$2 ORDER BY e.profile <=> target.profile LIMIT 6`,
+    `SELECT r.id,r.round_number,mp.name map,t.name winner,e.source,
+            round((1-(e.profile <=> target.profile))::numeric,4) similarity
+     FROM tactical_embeddings e
+     JOIN tactical_embeddings target
+       ON target.round_id=$1 AND target.feature_version=e.feature_version
+     JOIN game_rounds reference_round ON reference_round.id=target.round_id
+     JOIN match_games reference_game
+       ON reference_game.id=reference_round.game_id AND reference_game.map_id=$2
+     JOIN game_rounds r ON r.id=e.round_id
+     JOIN match_games g ON g.id=r.game_id
+     JOIN maps mp ON mp.id=g.map_id
+     JOIN teams t ON t.id=r.winning_team_id
+     WHERE e.round_id<>$1 AND g.map_id=$2
+     ORDER BY e.profile <=> target.profile LIMIT 6`,
     [round, map],
   );
   // Each candidate composition is one row per game. Count rounds without joining picks (avoids fan-out).

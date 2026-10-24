@@ -39,6 +39,8 @@ for (const path of [
 }
 const research = await (await page("/research", 2)).text();
 assert.match(research, /Sign in as a Head Coach/);
+const crossMap = await (await page("/research?round=1&map=2", 1)).text();
+assert.match(crossMap, /No comparable rounds/);
 const action = coach
   .match(/name="\$ACTION_ID_([^"]+)"/g)
   ?.map((x) => x.match(/\$ACTION_ID_([^"]+)/)![1]);
